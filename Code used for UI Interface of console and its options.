@@ -1,0 +1,190 @@
+import tkinter as tk
+from tkinter import messagebox
+import random
+
+# ---------------- WINDOW ----------------
+app = tk.Tk()
+app.title("جوال باي | JawalPay AI Console")
+app.geometry("950x560")
+app.configure(bg="#05010d")
+
+balance = 5000
+transactions = []
+
+# ---------------- COMMON ----------------
+def clear():
+    for w in app.winfo_children():
+        w.destroy()
+
+def neon_label(text, size=22, color="#00f7ff"):
+    return tk.Label(app, text=text, font=("Consolas", size, "bold"),
+                    fg=color, bg="#05010d")
+
+def neon_button(parent, text, color, cmd):
+    return tk.Button(parent, text=text, width=28, height=2,
+                     bg=color, fg="black",
+                     font=("Consolas", 12, "bold"),
+                     activebackground="#7b2cff",
+                     bd=0, cursor="hand2",
+                     command=cmd)
+
+# ---------------- DASHBOARD ----------------
+def show_dashboard():
+    clear()
+    neon_label("جوال باي :: AI DASHBOARD", 26, "#a855f7").pack(pady=15)
+    neon_label(f"WALLET BALANCE  >>  ₹ {balance}", 12, "#00f7ff").pack()
+
+    frame = tk.Frame(app, bg="#0c0220", highlightbackground="#7b2cff",
+                     highlightthickness=1)
+    frame.pack(pady=25)
+
+    neon_button(frame, "SEND MONEY", "#00f7ff", send_money_screen).pack(pady=8)
+    neon_button(frame, "BANK TRANSFER", "#a855f7", bank_screen).pack(pady=8)
+    neon_button(frame, "REFUND TRANSACTION", "#ff2e88", refund_screen).pack(pady=8)
+    neon_button(frame, "TRANSACTION HISTORY", "#22ff99", history_screen).pack(pady=8)
+    neon_button(frame, "EXIT", "#666", app.destroy).pack(pady=8)
+
+# ---------------- AI BAR ----------------
+def ai_risk_meter(amount):
+    risk = min(100, int(amount/50))
+    return "🟥 HIGH RISK" if risk > 60 else "🟨 MEDIUM RISK" if risk > 30 else "🟩 LOW RISK"
+
+# ---------------- SEND MONEY ----------------
+def send_money_screen():
+    clear()
+    neon_label("SEND MONEY :: AI MONITOR", 26, "#00f7ff").pack(pady=20)
+
+    box = tk.Frame(app, bg="#0c0220", highlightbackground="#00f7ff",
+                   highlightthickness=1)
+    box.pack(pady=25)
+
+    rcv = tk.Entry(box, font=("Consolas",14), bg="#05010d", fg="#00f7ff",
+                   insertbackground="#00f7ff", width=30, bd=0)
+    rcv.pack(padx=30, pady=12)
+    rcv.insert(0, "Receiver ID / Phone")
+
+    amt = tk.Entry(box, font=("Consolas",14), bg="#05010d", fg="#00f7ff",
+                   insertbackground="#00f7ff", width=30, bd=0)
+    amt.pack(padx=30, pady=12)
+    amt.insert(0, "Amount")
+
+    def process():
+        global balance
+        try:
+            value = float(amt.get())
+            if value > balance or value <= 0:
+                messagebox.showerror("جوال باي", "Invalid / Insufficient balance")
+                return
+
+            balance -= value
+            risk = ai_risk_meter(value)
+            tx_id = f"TXN{random.randint(1000,9999)}"
+            transactions.append(f"{tx_id} | SEND | ₹{value} | {risk}")
+
+            if value >= 3000:
+                messagebox.showwarning("جوال باي AI",
+                    f"⚠ SUSPICIOUS TRANSACTION DETECTED\nRisk Level: {risk}")
+            else:
+                messagebox.showinfo("جوال باي", f"✅ Payment successful\nRisk Level: {risk}")
+
+            show_dashboard()
+        except:
+            messagebox.showerror("جوال باي", "Enter valid number")
+
+    neon_button(box, "EXECUTE TRANSACTION", "#a855f7", process).pack(pady=18)
+    tk.Button(app, text="<< BACK", fg="#aaa", bg="#05010d",
+              font=("Consolas",10), bd=0, command=show_dashboard).pack()
+
+# ---------------- BANK ----------------
+def bank_screen():
+    clear()
+    neon_label("BANK TRANSFER MODULE", 26, "#a855f7").pack(pady=20)
+
+    box = tk.Frame(app, bg="#0c0220", highlightbackground="#a855f7",
+                   highlightthickness=1)
+    box.pack(pady=30)
+
+    acc = tk.Entry(box, font=("Consolas",14), bg="#05010d", fg="#00f7ff",
+                   insertbackground="#00f7ff", width=30, bd=0)
+    acc.pack(padx=30, pady=12)
+    acc.insert(0, "Account number")
+
+    amt = tk.Entry(box, font=("Consolas",14), bg="#05010d", fg="#00f7ff",
+                   insertbackground="#00f7ff", width=30, bd=0)
+    amt.pack(padx=30, pady=12)
+    amt.insert(0, "Amount")
+
+    def send_bank():
+        global balance
+        try:
+            value = float(amt.get())
+            if value <= balance and value > 0:
+                balance -= value
+                transactions.append(f"BANK | ₹{value} | SUCCESS")
+                messagebox.showinfo("جوال باي", "🏦 Bank transfer successful")
+                show_dashboard()
+            else:
+                messagebox.showerror("جوال باي", "Insufficient balance")
+        except:
+            messagebox.showerror("جوال باي", "Enter valid amount")
+
+    neon_button(box, "SEND TO BANK", "#00f7ff", send_bank).pack(pady=20)
+    tk.Button(app, text="<< BACK", fg="#aaa", bg="#05010d",
+              font=("Consolas",10), bd=0, command=show_dashboard).pack()
+
+# ---------------- REFUND ----------------
+def refund_screen():
+    clear()
+    neon_label("REFUND MODULE", 26, "#ff2e88").pack(pady=20)
+
+    def refund():
+        global balance
+        balance += 500
+        transactions.append("REFUND | ₹500 | SUCCESS")
+        messagebox.showinfo("جوال باي", "🔁 Refund successful (₹500)")
+        show_dashboard()
+
+    neon_button(app, "PROCESS REFUND", "#ff2e88", refund).pack(pady=50)
+    tk.Button(app, text="<< BACK", fg="#aaa", bg="#05010d",
+              font=("Consolas",10), bd=0, command=show_dashboard).pack()
+
+# ---------------- HISTORY ----------------
+def history_screen():
+    clear()
+    neon_label("TRANSACTION HISTORY", 26, "#22ff99").pack(pady=20)
+
+    box = tk.Text(app, width=90, height=18, bg="#05010d",
+                  fg="#00f7ff", font=("Consolas",11))
+    box.pack(pady=20)
+
+    for t in transactions:
+        box.insert(tk.END, t + "\n")
+
+    tk.Button(app, text="<< BACK", fg="#aaa", bg="#05010d",
+              font=("Consolas",10), bd=0, command=show_dashboard).pack()
+
+# ---------------- REGISTER ----------------
+def register():
+    messagebox.showinfo("جوال باي", "Registration successful")
+    show_dashboard()
+
+neon_label("جوال باي | JawalPay", 34, "#00f7ff").pack(pady=20)
+neon_label("AI POWERED DIGITAL PAYMENT SYSTEM", 12, "#a855f7").pack()
+
+frame = tk.Frame(app, bg="#0c0220", highlightbackground="#a855f7",
+                 highlightthickness=1)
+frame.pack(pady=40)
+
+phone = tk.Entry(frame, font=("Consolas",14), bg="#05010d",
+                 fg="#00f7ff", insertbackground="#00f7ff", width=30, bd=0)
+phone.pack(padx=30, pady=12)
+phone.insert(0, "Phone number")
+
+password = tk.Entry(frame, font=("Consolas",14), bg="#05010d",
+                    fg="#00f7ff", insertbackground="#00f7ff", width=30, bd=0, show="*")
+password.pack(padx=30, pady=12)
+password.insert(0, "Password")
+
+neon_button(frame, "REGISTER & ENTER SYSTEM", "#00f7ff", register).pack(pady=25)
+
+app.mainloop()
