@@ -1,0 +1,178 @@
+import json
+import uuid
+
+def load(file):
+    with open(file, "r") as f:
+        return json.load(f)
+
+def save(file, data):
+    with open(file, "w") as f:
+        json.dump(data, f, indent=4)
+
+# ---------------- USERS ----------------
+
+def register_user(phone, password):
+    users = load("users.json")
+
+    user = {
+        "id": str(uuid.uuid4()),
+        "phone": phone,
+        "password": password,
+        "name": "",
+        "email": "",
+        "balance": 5000
+    }
+
+    users.append(user)
+    save("users.json", users)
+
+    print("✅ User registered")
+    print("Your user id:", user["id"])
+
+def update_user(uid, name, email, phone):
+    users = load("users.json")
+
+    for u in users:
+        if u["id"] == uid:
+            u["name"] = name
+            u["email"] = email
+            u["phone"] = phone
+            save("users.json", users)
+            print("✅ Profile updated")
+            return
+
+    print("❌ User not found")
+
+# ---------------- TRANSACTIONS ----------------
+
+def paytm_transfer(from_id, to_id, amount):
+    users = load("users.json")
+    txs = load("transactions.json")
+
+    sender = next((u for u in users if u["id"] == from_id), None)
+    receiver = next((u for u in users if u["id"] == to_id), None)
+
+    if not sender or not receiver:
+        print("❌ Invalid user id")
+        return
+
+    if sender["balance"] < amount:
+        print("❌ Insufficient balance")
+        return
+
+    sender["balance"] -= amount
+    receiver["balance"] += amount
+
+    tx = {
+        "id": str(uuid.uuid4()),
+        "type": "PAYTM",
+        "from": from_id,
+        "to": to_id,
+        "amount": amount,
+        "status": "SUCCESS"
+    }
+
+    txs.append(tx)
+    save("users.json", users)
+    save("transactions.json", txs)
+
+    print("✅ Money sent successfully")
+    print("Transaction id:", tx["id"])
+
+def bank_transfer(from_id, acc, ifsc, amount):
+    users = load("users.json")
+    txs = load("transactions.json")
+
+    sender = next((u for u in users if u["id"] == from_id), None)
+
+    if not sender:
+        print("❌ Invalid user id")
+        return
+
+    if sender["balance"] < amount:
+        print("❌ Insufficient balance")
+        return
+
+    sender["balance"] -= amount
+
+    tx = {
+        "id": str(uuid.uuid4()),
+        "type": "BANK",
+        "from": from_id,
+        "account": acc,
+        "ifsc": ifsc,
+        "amount": amount,
+        "status": "SUCCESS"
+    }
+
+    txs.append(tx)
+    save("users.json", users)
+    save("transactions.json", txs)
+
+    print("✅ Bank transfer done")
+    print("Transaction id:", tx["id"])
+
+def refund(tx_id):
+    users = load("users.json")
+    txs = load("transactions.json")
+
+    for tx in txs:
+        if tx["id"] == tx_id and tx["status"] == "SUCCESS":
+            sender = next((u for u in users if u["id"] == tx.get("from")), None)
+            receiver = next((u for u in users if u["id"] == tx.get("to")), None)
+
+            if receiver:
+                receiver["balance"] -= tx["amount"]
+            if sender:
+                sender["balance"] += tx["amount"]
+
+            tx["status"] = "REFUNDED"
+            save("users.json", users)
+            save("transactions.json", txs)
+
+            print("✅ Refund successful")
+            return
+
+    print("❌ Transaction not found")
+
+# ---------------- CLI ----------------
+
+print("===== SMARTPAY COMMAND LINE APP =====")
+
+while True:
+    print("\nCommands:")
+    print("RegisterUser phone password")
+    print("UpdateUser user_id name email phone")
+    print("CreateTransaction PAYTM from_id to_id amount")
+    print("CreateTransaction BANK from_id account ifsc amount")
+    print("RefundTransaction transaction_id")
+    print("Exit")
+
+    cmd = input(">> ")
+
+    p = cmd.split()
+
+    try:
+        if p[0] == "RegisterUser":
+            register_user(p[1], p[2])
+
+        elif p[0] == "UpdateUser":
+            update_user(p[1], p[2], p[3], p[4])
+
+        elif p[0] == "CreateTransaction" and p[1] == "PAYTM":
+            paytm_transfer(p[2], p[3], float(p[4]))
+
+        elif p[0] == "CreateTransaction" and p[1] == "BANK":
+            bank_transfer(p[2], p[3], p[4], float(p[5]))
+
+        elif p[0] == "RefundTransaction":
+            refund(p[1])
+
+        elif p[0] == "Exit":
+            break
+
+        else:
+            print("❌ Wrong command")
+
+    except:
+        print("❌ Format error")
